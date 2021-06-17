@@ -1,0 +1,75 @@
+---
+title: "R Notebook"
+output:
+---
+```{r}
+   old1 <- "çğşıüöÇĞŞİÖÜ"
+   new1 <- "cgsıuocgsiou" 
+
+
+```
+
+```{r}
+library(readr)
+library(readxl)
+library(tm)
+library(tidyverse)
+mainDF <- read_excel("mainDF.xlsx")
+mainDF %>% view()
+unique(mainDF$pozisyon_kisa)
+```
+
+
+```{r}
+ilan_temizle<- function(x) str_split(x,'\r|\n')%>%
+  unlist() %>% 
+  gsub("·|,|\\.|“|”","",.) %>% 
+  noquote() %>%
+   stringr::str_squish() %>% 
+   chartr(old1,new1, .) %>% 
+  tolower() %>% 
+  .[.!=""]
+```
+
+
+```{r}
+#mainDF %>% group_by(pozisyon) %>% summarise(n=n()) %>% 
+mainDF$metin[1] %>% ilan_temizle()->test
+cumleler<-list(NA)
+for(i in 1:nrow(mainDF)){
+  cumleler[[i]]<-mainDF$metin[i] %>% ilan_temizle()
+}
+
+
+ilan_id=list(NA)
+for(i in 1:length(cumleler)){
+  ilan_id[[i]]<-rep(i,length(cumleler[[i]]))
+}
+
+data.frame(ilan_id=unlist(ilan_id),
+           cumleler=unlist(cumleler)) %>% view()
+```
+
+
+```{r}
+cumleler[1:10]
+
+do.call(rbind.data.frame, cumleler) %>% View()
+data.frame(cumleler)
+df %>% View()
+"fruit apple samsung huawei"->string
+string[1:10]<-string
+stringr::str_which(string,"apple")
+
+res <- str_match(test,
+                 "tanimi\\s*(.*?)\\s*tanimi")
+
+res
+
+str_which(test,"is tanimi")
+```
+
+```{r}
+mainDF$pozisyon[17]
+```
+
