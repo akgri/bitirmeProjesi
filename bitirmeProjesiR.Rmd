@@ -1,21 +1,35 @@
 ---
-title: "Kariyer.net sitesi üzerinden çekilen 'istatistik' anahtar kelimeli ilanların analiz edilmesi"
-author: 'Fatih Ekici'
-output: html_notebook
+title: Kariyer.net sitesi üzerinden çekilen 'istatistik' anahtar kelimeli ilanların
+  analiz edilmesi
+author: "Fatih Ekici"
+output:
+  html_document:
+    df_print: paged
 ---
 
-```{r}
+```{r include=FALSE}
 knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE
 )
 ```
 
+```{css, echo=FALSE}
+
+#invisible {
+   color: blue;
+ font-size: 1.2em;
+  display:none;
+}
+
+
+
+```
 
 
 # Giriş
 
-Kariyer.net üzerindeki ilanları python üzerinde selenium kütüphanesi ile çektik.Daha sonrasında excel üzerinden el ile veri analitiği ile alakasız veya istatistik mezunlarının girme şansı olmayan/girmek istemeyeceği ilanları düşürdük.Toplam veri sayısı 717 den 498 adet ilana düşürülmüştür. Bu işlemin yapılma sebebi +400 adet olan eşsiz pozisyon isimlerini daha kolay bir biçimde üst gruplara alabilmek ve daha tutarlı sonuçlar elde etmektir.
+Kariyer.net üzerindeki ilanları python üzerinde selenium kütüphanesi ile çekildi. Daha sonrasında excel üzerinden el ile veri analitiği ile alakasız veya istatistik mezunlarının girme şansı olmayan/girmek istemeyeceği ilanları düşürüldü. Toplam veri sayısı 717 den 496 adet ilana düşürülmüştür. Bu işlemin yapılma sebebi +400 adet olan eşsiz pozisyon isimlerini daha kolay bir biçimde üst gruplara alabilmek ve daha tutarlı sonuçlar elde etmektir.
 
 Buna ek olarak **pozisyon kısa** adı altında ilanlar belirli başlı niteliklere göre gruplandırılmıştır.
 
@@ -47,20 +61,27 @@ library("gridExtra")
 library(tidyverse)
 library(arsenal)
 library("cowplot")
-```
+filter<-dplyr::filter
+select<-dplyr::select
+library(stringr)
 
+```
 
 ```{r}
+#verinin okutulması ve çakışan ilan durumu için unique ile temizlenmesi. 
 mainDF <- read_excel("mainDF.xlsx")
 mainDF<-unique(mainDF)
+mainDF %>% filter(!grepl("QUALIFICATIONS AND JOB DESCRIPTION",metin))->mainDF
 ```
 
-## Kaç farklı pozisyon vardır ve en çok tekrar edenler hangileridir?
+
+
+
+
+
+# Kaç farklı pozisyon vardır ve en çok tekrar edenler hangileridir?
 
 Toplam `r length(unique(mainDF$pozisyon))` adet essiz isimli pozisyon bulunmaktadir.
-
-
-
 
 ```{r}
 mainDF %>% 
@@ -72,7 +93,8 @@ mainDF %>%
 
 ```
 
-Görüldüğü gibi frekans sayıları benzer işlerin farklı sayılarla belirtilmesi sebebiyle azdır.Kısaltılmış ilan sayılarını inceleyelim.
+Görüldüğü gibi frekans sayıları benzer işlerin farklı sayılarla belirtilmesi sebebiyle azdır.Kısaltılmış ilanların frekans tablosu aşağıda verilmiştir.
+
 ```{r}
 mainDF %>% 
   group_by(pozisyon_kisa) %>% 
@@ -81,7 +103,6 @@ mainDF %>%
   rename(`indirgenmiş pozisyon`=pozisyon_kisa)%>%
   kableExtra::kable()
 ```
-
 
 ```{r}
 mainDF %>%
@@ -98,14 +119,15 @@ mainDF %>%
 
 
 ```
-Beklenildiği üzere istatistik pozisyonlarında analist pozisyonların ön sıralarda olduğunu diğer meslek dallarında daha az ön planda olduğunu görmekteyiz. Finans sektörünün tek başına yüksek miktarda analist barındırdığı görülebilmektedir.
 
-Bu kısım indirgemenin bir yan etkisi olarak net yorumlarda bulunmamızı engellemektedir. Bu sebeple sektör ve departmanları incelemek iş ilanları hakkında daha iyi bilgi sahibi olmamızı sağlar.
+Beklenildiği üzere istatistik anahtar kelimeli ilanlarlarda analist pozisyonların ön sıralarda olduğunu, diğer meslek dallarında daha az ön planda olduğunu görmekteyiz. Finans sektörünün tek başına yüksek miktarda analist barındırdığı görülebilmektedir.
 
+Bu kısım indirgemenin bir yan etkisi olarak net yorumlarda bulunmamızı engellemektedir. Bu sebeple sektör ve departmanları inceleyerek daha iyi bir öngörü elde edilmeye çalışılmıştır.
 
-## Departman ve sektörel dağılım 
+# Departman ve sektörel dağılım
 
-Kariyer.net ilanlara ait sektör ve departman bilgilerini de sunmakta, bu sayede iş ilanlarının hangi sektör ve departmanda daha çok yoğunlaştığını inceleyelim.
+Kariyer.net ilanlara ait sektör ve departman bilgilerini de sunmakta, bu sayede iş ilanlarının hangi sektör ve departmanda daha çok yoğunlaştığı aşağıda tablo ve grafiklerle gösterilmiştir.
+
 
 ```{r}
 mainDF %>% group_by(`Departman:`) %>% mutate(`Departman:`=tolower(`Departman:`)) %>% summarise(frekans=n()) %>% arrange(-frekans) %>% filter(frekans>5)->freqDepartmanDF
@@ -119,7 +141,6 @@ mainDF %>%
   filter(frekans >5) ->freqSektorDF
 ```
 
-
 ```{r,results='asis'}
 knitr::kable(freqDepartmanDF,
              caption = '**Departman ait frekans tablosu**')
@@ -128,16 +149,17 @@ knitr::kable(freqSektorDF,
              caption = '**Sektörlere ait frekans tablosu**')
 ```
 
-
 ```{r}
+library(cowplot)
 mainDF %>% 
   group_by(`Departman:`) %>%
   mutate(`Departman:`=tolower(`Departman:`)) %>%
   summarise(frekans=n()) %>% arrange(-frekans) %>%
   filter(frekans>5) %>%
   ggplot(.,aes(x=reorder(`Departman:`, frekans),y=frekans))+
+ scale_y_continuous(breaks=seq(0,70,5))+
   geom_bar(stat = "identity",col='white',fill='steelblue')+
-  labs(x='Deparmanlar',title= 'En az 5 pozisyona sahip departmanlar')+
+  labs(x='Deparmanlar')+
   theme_classic()+
   coord_flip()->departmanPlot
 
@@ -145,31 +167,95 @@ freqSektorDF %>%
   mutate(`Firma Sektörü:`=ifelse(is.na(`Firma Sektörü:`),'bilinmiyor',`Firma Sektörü:`)) %>% 
   ggplot(.,aes(x=reorder(`Firma Sektörü:`, frekans),y=frekans))+
   geom_bar(stat = "identity",col='white',fill='steelblue')+
-  labs(x='Sektörler',title= 'En az 5 pozisyona sahip departmanlar')+
+  labs(x='Sektörler')+
   theme_classic()+
+  scale_y_continuous(breaks=seq(0,70,5))+
   coord_flip()->sektorPlot
 
-cowplot::plot_grid(departmanPlot, sektorPlot, ncol = 2, nrow = 1)
+ggdraw() + 
+  draw_label(
+    "Departman ve sektörlere göre istihdam istatistikleri",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 7)
+  )->title
+
+
+
+
+
+
+mainDF %>% 
+  group_by(`Departman:`) %>%
+  mutate(`Departman:`=tolower(`Departman:`)) %>%
+  summarise(frekans=n()) %>% arrange(-frekans) %>%
+  filter(frekans>5) %>%
+  ggplot(.,aes(x=reorder(`Departman:`, frekans),y=frekans))+
+ scale_y_continuous(breaks=seq(0,70,5))+
+  geom_bar(stat = "identity",col='white',fill='steelblue')+
+  labs(x='Deparmanlar')+
+  theme_classic()+
+  coord_flip()->departmanPlot
+
+freqSektorDF %>%
+  mutate(`Firma Sektörü:`=ifelse(is.na(`Firma Sektörü:`),'bilinmiyor',`Firma Sektörü:`)) %>% 
+  ggplot(.,aes(x=reorder(`Firma Sektörü:`, frekans),y=frekans))+
+  geom_bar(stat = "identity",col='white',fill='steelblue')+
+  labs(x='Sektörler')+
+  theme_classic()+
+  scale_y_continuous(breaks=seq(0,70,5))+
+  coord_flip()->sektorPlot
+
+cowplot::ggdraw() + 
+  draw_label(
+    "Departman ve sektörlere göre istihdam istatistikleri",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 7)
+  )->title
+
+
+
+
+
+
+plot_row<-cowplot::plot_grid(departmanPlot, sektorPlot)
+cowplot::plot_grid(title,plot_row,nrow=2,
+                   rel_heights = c(0.1, 1))
+
 ```
 
-Bilgi teknolojileri/it, planlama ve finans alanının en çok istihdam sağlanan departmanlardır .Sektörel anlamda ise bankacılık,perakende ve bilişim sektörü istatistik mezunlarına en çok istihdam sağlayan 3 sektördür. Bu sonuç, istatistik mezunlarının gün geçtikçe daha fazla bilgisayar ve yazılım teknolojileri ile iç içe çalıştğını göstermektedir.
+
+Bilgi teknolojileri/it, planlama ve finans alanı, en çok istihdam sağlayan departmanlardır .Sektörel anlamda ise bankacılık,perakende ve bilişim sektörü istatistik mezunlarına en çok istihdam sağlayan 3 sektördür. Bu sonuç, istatistik mezunlarının gün geçtikçe daha fazla bilgisayar ve yazılım teknolojileri ile iç içe çalıştğını göstermektedir.
 
 Sektörel anlamda en çok istihdamın finans/bankacılık sektörü olduğu gözden kaçmamalıdır.
 
-## iş ilanlarnın konumları
+# iş ilanlarnın konumları
 
 iş ilanlarının konumlarında istanbul'un avrupa ve anadolu yakaları 2 ayrı yer sayılırken kalan illerde herhangi bir değişiklik yapılmayacaktır.
 
-Ayrıca bazı iş ilanlarında birden fazla konum olması, her bir bölgeyi ekstra sayabileceğimiz anlamına gelmektedir.Bu sebeple ilan sayısından daha fazla sayıda vilayet bulmuş oluruz.
+Ayrıca bazı iş ilanlarında birden fazla konum olması, her bir bölgeyi ekstra sayılabileceği anlamına gelmektedir.Bu sebeple ilan sayısından daha fazla sayıda vilayet bulunmuş olmaktadır.
+
 
 ```{r}
-old1 <- "İ"
-new1 <- "cgsıuocgsiou" 
+#Harita grafiği excel'den eklenecektir.R üzerinde bu grafiğin özelleştirmesi problemlidir.
+old1 <- "çğşıüöÇĞŞİÖÜ"
+new1 <- "cgsiuocgsiou" 
 ```
 
 ```{r}
 library(stringr)
-parantezsil<-function(x)gsub("\\s*\\([^\\)]+\\)","",as.character(x))
+ parantezsil<-function(x)gsub("\\s*\\([^\\)]+\\)","",as.character(x))
 
 
 gsub("İstanbul(Avr.)", "istanbul", mainDF$city , fixed=TRUE)%>%
@@ -185,53 +271,57 @@ gsub("İstanbul(Avr.)", "istanbul", mainDF$city , fixed=TRUE)%>%
   table() %>%
   data.frame() %>% 
   rename(il=1,frekans='Freq') %>% 
-  arrange(-frekans)->ilFreqDF
-    
+  arrange(il)->ilFreqDF
+ 
+ilFreqDF %>% kableExtra::kable()
+   
 ```
+#
+<!-- # ```{r} -->
+<!-- # TUR <- readRDS("TUR_adm1.rds") -->
+<!-- # TUR$NAME_1 %>% sort() %>% tolower()->TR -->
+<!-- # case_when( -->
+<!-- #    TR %in% "nevsehir"~"nevşehir", -->
+<!-- #    TR %in% "aydin"~"aydın", -->
+<!-- #    TR %in% 'eskisehir' ~ 'eskişehir', -->
+<!-- #    TR %in% 'k. maras' ~ 'kahramanmaraş', -->
+<!-- #    TR %in% 'sanliurfa' ~ 'şanlıurfa', -->
+<!-- #    TR %in% 'tekirdag' ~ 'tekirdağ', -->
+<!-- #    !(TR%in%c('eskişehir','kahramanmaraş','şanlıurfa','tekirdağ','nevşehir','aydın'))~TR -->
+<!-- #  -->
+<!-- # )->TR -->
+<!-- # TUR$NAME_1<-TR -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r} -->
+<!-- # fortify(TUR) -> TUR_for -->
+<!-- # id_and_cities_ist <- data_frame(id = rownames(TUR@data), -->
+<!-- #                                 'il' = TUR@data$NAME_1) %>% -->
+<!-- #   left_join(ilFreqDF, by = "il")  -->
+<!-- # final_ist_map <- left_join(TUR_for, id_and_cities_ist, by = "id") -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # ```{r} -->
+<!-- # library(mapproj) -->
+<!-- # ggplot(final_ist_map) + -->
+<!-- #   geom_polygon( aes(x = long, y = lat, group = group, fill = frekans), -->
+<!-- #                 color = "grey") + -->
+<!-- #   coord_map() + -->
+<!-- #   theme_void() +  -->
+<!-- #   labs(title = "2021 haziran ayı istatistik mezunlarına uygun iş ilanlarının konumları", -->
+<!-- #        subtitle = paste0("Toplam çalışılabilir konum sayisi: ", sum(ilFreqDF$frekans)), -->
+<!-- #        caption = "Veri Kaynağı: kariyer.net") + -->
+<!-- #   scale_fill_distiller(palette = 'Reds', -->
+<!-- #                        direction = 1, -->
+<!-- #                          type = "seq", -->
+<!-- #                        name = "illere göre ilan frekansı", -->
+<!-- #                        limits = c(0,400), na.value = "white") + -->
+<!-- #   theme(plot.title = element_text(hjust = 0.05), -->
+<!-- #         plot.subtitle = element_text(hjust = 0.05)) -->
 
-```{r}
-TUR[[6]] %>% data.frame() %>% rename('NAME_1'=1) %>%
-  mutate(
-    NAME_1 = tolower(NAME_1),
-    NAME_1 = case_when(
-      NAME_1 == 'eskisehir' ~ 'eskişehir',
-      NAME_1 == 'k. Maras' ~ 'kahramanmaraş',
-      NAME_1 == 'sanliurfa' ~ 'şanlıurfa',
-      NAME_1 == 'eskisehir' ~ 'tekirdağ',
-      NAME_1!=c('eskişehir','kahramanmaraş','şanlıurfa','tekirdağ')~NAME_1
-    )) %>% pull(1)->TUR[[6]]
-
-```
-
-```{r}
-fortify(TUR) -> TUR_for
-id_and_cities_ist <- data_frame(id = rownames(TUR@data),
-                                'il' = TUR@data$NAME_1) %>%
-  left_join(ilFreqDF, by = "il") 
-final_ist_map <- left_join(TUR_for, id_and_cities_ist, by = "id")
-```
-
-```{r}
-library(mapproj)
-ggplot(final_ist_map) +
-  geom_polygon( aes(x = long, y = lat, group = group, fill = frekans),
-                color = "grey") +
-  coord_map() +
-  theme_void() + 
-  labs(title = "2021 haziran ayı istatistik mezunlarına uygun iş ilanlarının konumları",
-       subtitle = paste0("Toplam çalışılabilir konum sayisi: ", sum(ilFreqDF$frekans)),
-       caption = "Veri Kaynağı: kariyer.net") +
-  scale_fill_distiller(palette = 'Reds',
-                       direction = 1,
-                         type = "seq",
-                       name = "illere göre ilan frekansı",
-                       limits = c(0,400), na.value = "white") +
-  theme(plot.title = element_text(hjust = 0.05),
-        plot.subtitle = element_text(hjust = 0.05))
-
-```
 
 iş ilanlarının çoğunluğu incelendiğinde ağırlıklı olarak istanbulun iş havuzunun çok yüksek bir kısmını barındırdığı görülebilir. Finans,it,arge sektörlerinin çoğunlukla istanbulda yoğunlaşması bu sonucun nihai sebebidir.
+
 ```{r}
 gsub("İstanbul(Avr.)", "istanbul.avrupa", mainDF$city , fixed=TRUE)%>%
   gsub("İstanbul(Asya)","istanbul.asya",.,fixed =TRUE ) %>% 
@@ -249,11 +339,14 @@ gsub("İstanbul(Avr.)", "istanbul.avrupa", mainDF$city , fixed=TRUE)%>%
   arrange(-frekans)->ilIstanbulFreqDF
 ilIstanbulFreqDF[1:2,] %>% kableExtra::kable()
 ```
-Bununla beraber avrupa yakasının iş imkanı, asya yakasına göre 1,6 kat daha fazladır.Avrupa yakasında ikamet etmek iş bulma konusunda kolaylık veya avantaj sağlayabilir.
 
-## Askerlik şartları
+Bununla beraber Avrupa Yakasının iş imkanı sayısı, asya yakasına göre ~1,6 kat daha fazladır.Avrupa yakasında ikamet etmek iş bulma konusunda kolaylık  sağlama ihtimali kuvvetlidir.
 
-Askerlik durum bilgisinde yapıldı,muaf,tecilli,yapılmadı şeklinde 4 farklı kategori bulunmakta.Yapıldı ve muaf kesinlikle askere gitmeyen bir kişiyi ifade ettiği için bu 2 grubu yapıldı,tecilli ve yapılmadı ise beraber değerlendirecektir.
+
+# Askerlik şartları
+
+Askerlik durum bilgisinde yapıldı,muaf,tecilli,yapılmadı şeklinde 4 farklı kategori bulunmakta.**Yapıldı** ve **muaf** kesinlikle askere gitmeyen bir kişiyi ifade ettiği için bu 2 grup yapıldı olarak kodlanmıştır. **tecilli** ve **yapılmadı** ise beraber değerlendirilmiştir.
+
 
 ```{r}
 one_hot<-function(df,col){
@@ -269,7 +362,6 @@ one_hot<-function(df,col){
 }
 ```
 
-
 ```{r}
 mainDF$`Askerlik Durumu:` %>% unique()
 mainDF %>% select(`Askerlik Durumu:`) %>%
@@ -278,16 +370,22 @@ mainDF %>% select(`Askerlik Durumu:`) %>%
   grepl('Muaf|Yapıldı',mainDF$`Askerlik Durumu:`)~'tecilli-yapılmadı',
   is.na(mainDF$`Askerlik Durumu:`)~NA_character_)) %>%
   group_by(`Askerlik Durumu:`) %>% 
-  summarise(`Askelik Durumu`=n()) %>% 
-  kableExtra::kable()
+  summarise(`freq`=n()) ->askerlikfrekansdf
+  askerlikfrekansdf %>% kableExtra::kable()
+askerlikfrekansdf[which(is.na(askerlikfrekansdf$`Askerlik Durumu:`)),]$freq->askerNailanSayisi
 ```
 
-Veride askerlik bilgisine dair büyük bir kısımda herhangi bir bilgi girişi yapılmamıştır.Yinede ilanların büyük bir kısmında işverenin askerliğin makul bir tecil süresini hoş karşıladığını görmekteyiz.
-**Revize not**:Bu kısım ilan içerikleri kısmından daha detaylı edinilebilir.
 
-## Tecrübe
 
-Pozisyonlar için gerekli olan tecrübe seviyesini inceleyelim.
+Veride askerlik bilgisine dair büyük bir kısımda herhangi bir bilgi girişi yapılmamıştır.`askerNailanSayisi` sayıda ilan hakkında bilgi yoktur.
+
+Yinede yeterli sayıda ilan askerlikle alakalı bilgi vermektedir.
+Bilinenin aksine ilanların büyük bir kısmında işverenlerin askerliğin makul bir tecil süresini kabul edilebilir bulduğu görülmektedir.
+
+
+# Tecrübe
+
+Pozisyonlar için gerekli olan tecrübe seviyesi aşağıda belirtilmiştir.
 
 ```{r}
 mainDF %>% select(`Tecrübe:`,pozisyon) %>% mutate(min=case_when(
@@ -304,38 +402,80 @@ mainDF %>% select(`Tecrübe:`,pozisyon) %>% mutate(min=case_when(
   )) ->tecrubeMinMaxDF
 ```
 
-
 ```{r}
-ggplot(tecrubeMinMaxDF,aes(x=as.numeric(min)))+geom_density()+
-  labs(x="Minimum Tecrübe Süresi",
-       y="Yoğunluk",
-       caption='Veri Kaynağı: kariyer.net\n 9eksik gozleme gore*')+
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 20))
+tecrubeMinMaxDF$min %>% 
+  as.numeric() %>%
+  sort() %>% 
+  table(min=.) %>%
+  data.frame() %>%
+  mutate(min=as.integer(min),
+         cumulative_freq=cumsum(Freq))->CumulativeMinExpDf
+
+
+ggplot(data=CumulativeMinExpDf, aes(x=min, y=cumulative_freq)) +
+    geom_point()+
+  theme_minimal()+
+  geom_label(aes(x = min, y = cumulative_freq+30, label =paste("K:",cumulative_freq,"\nG:",Freq)), fill ="#66A61E",alpha = 0.6,size=3)+
+  geom_label(label =
+                 "K:kümülatif deger\nG:gerçek deger",x=11,y=120)+
+  scale_x_discrete(limits=factor(CumulativeMinExpDf$min))+
+  geom_line(color="#E69F00",size=1.2)+
+  labs(y ="Kümülatif Toplam",
+       x ="Minimum tecrübe süresi(Yıl)",
+       caption  = "Veri kaynağı:kariyer.net\nEksik ilan sayısı:7\nFatih Ekici")
+
+  
+
 ```
 
-En çok aranan seviyenin mid level pozisyonlar olduğunu görülmüştür.
- `r tecrubeMinMaxDF %>% filter(min<5) %>% nrow` kişi yani 5 yıldan fazla tecrübeye sahip birisi ilanların ~%80'nine  başvuruda bulunabilir.
+En çok aranan seviyenin mid level pozisyonlar olduğunu görülmüştür. `r tecrubeMinMaxDF %>% filter(min<5) %>% nrow` kişi yani 5 yıldan fazla tecrübeye sahip birisi ilanların \~%80'nine başvuruda bulunabilmektedir.
 
-Maksimum tecrübe kıstasında yeterli veri olmaması sebebiyle analize dahil edilmemiştir.
-### Yönetici pozisyonlar
-İçerisinde yönetici,müdür,manager kelimelerinin geçtiği ilananlarının minimum tecrübe süresine göre yöneticiler için ortalama çalışma süresi
+Maksimum tecrübe istatistiği yeterli veri olmaması sebebiyle analize dahil edilmemiştir.
+
+## Yönetici pozisyonlar
+
+İçerisinde yönetici,müdür,manager kelimelerinin geçtiği ilanlardan yönetici sınıfı için gerekli minimum çalışma süresinin grafiği aşağıda verilmiştir.
+
 ```{r}
+tecrubeMinMaxDF[grepl('müdür|yönetici|manager',tolower(tecrubeMinMaxDF$pozisyon)),]$min %>% 
+  as.numeric() %>%
+  sort() %>% .[.>1] %>% 
+  table(min=.) %>%
+  data.frame() %>%
+  mutate(min=as.integer(min),
+         cumulative_freq=cumsum(Freq))->CumulativeMinExpManagerDf
 
-
-tecrubeMinMaxDF[grepl('müdür|yönetici|manager',tolower(tecrubeMinMaxDF$pozisyon)),] %>% 
-  ggplot(.,aes(x=as.numeric(min)))+geom_density()+
-  labs(x="Minimum Tecrübe Süresi",
-       y="Yoğunluk",
-       caption='Veri Kaynağı: kariyer.net\n 9eksik gozleme gore*')+
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 20))
+ggplot(data=CumulativeMinExpManagerDf, aes(x=min, y=cumulative_freq)) +
+    geom_point()+
+  theme_minimal()+
+  geom_label(aes(x = min, y = cumulative_freq+5, label =paste("K:",cumulative_freq,"\nG:",Freq)), fill ="#66A61E",alpha = 0.6,size=3)+
+  geom_label(label =
+                 "K:kümülatif deger\nG:gerçek deger",x=9,y=10)+
+  scale_x_discrete(limits=factor(CumulativeMinExpDf$min))+
+  geom_line(color="#E69F00",size=1.2)+
+  labs(y ="Kümülatif Toplam",
+       x ="Minimum tecrübe süresi(Yıl)",
+       caption  = "Veri kaynağı:kariyer.net\nFatih Ekici")
 
 ```
 
-İçerisinde **yönetici**,**müdür**,**manager** kelimelerinin geçtiği ilananlarının minimum tecrübe süresini incelendiğinde 3.yıldan itibaren yönetici pozisyonlarının yükselişe geçtiğini 5.yıldan itibaren ise zirveye yaklaştığını görmekteyiz. 
-5.yılın iş hayatında dikey yükseliş yaşamak için uygun bir tecrübe süresi olduğunu görebiliriz.
+İçerisinde **yönetici**,**müdür**,**manager** kelimelerinin geçtiği ilananlarının minimum tecrübe süresini incelendiğinde 5.yıldan itibaren ilan sayısında hatrı sayılır artış görülmüştür.
+5 yıllık tecrübe yönetici pozisyonu sayısındaki ivme dikkate alındığında Türkiyedeki yönetici pozisyonları aranan bir özellik olduğu görülmüştür.
+# ilanların genelleme yapılabilmesi adına kümelenmesi
+<-Harun yazacak daha a..
+
 
 # ilan içeriklerinin analiz edilmesi
+
 Bu aşamada ilan içeriklerindeki hard skill'lerin bulunması ve benzer iş ilanlarının kümelenerek bu ilanlara ait becerilerde ne tür farklılıklar/benzerlikler olduğu analiz edilecektir.
 
+## Metinlerin temizlenmesi
+
+```{r}
+cluster_ilan_main <- read_csv("cluster_ilan_main.csv")
+cluster_ilan_main %>% distinct()  %>% filter(urls%in% mainDF$urls)->cluster_ilan_main
+
+cluster_ilan_main %>% group_by(cluster) %>% summarise(Freq=n())
+```
 
 
