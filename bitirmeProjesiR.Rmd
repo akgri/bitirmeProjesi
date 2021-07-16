@@ -12,17 +12,14 @@ output:
 ```{r include=FALSE}
 knitr::opts_chunk$set(
   warning = FALSE,
-  message = FALSE,
-  echo = FALSE
+  message = FALSE
 )
 
 ```
 
-```{css, echo=FALSE}
+```{css eval=FALSE, include=FALSE}
 
 #metinlerin-temizlenmesi {
-   color: blue;
- font-size: 1.2em;
   display:none;
 }
 
@@ -371,16 +368,16 @@ one_hot<-function(df,col){
 ```
 
 ```{r}
-mainDF$`Askerlik Durumu:` %>% unique()
+
 mainDF %>% select(`Askerlik Durumu:`) %>%
   mutate(`Askerlik Durumu:`=case_when(
   grepl('Yapılmadı|Tecilli',mainDF$`Askerlik Durumu:`)~'yapıldı-muaf',
   grepl('Muaf|Yapıldı',mainDF$`Askerlik Durumu:`)~'tecilli-yapılmadı',
   is.na(mainDF$`Askerlik Durumu:`)~NA_character_)) %>%
   group_by(`Askerlik Durumu:`) %>% 
-  summarise(`freq`=n()) ->askerlikfrekansdf
-  askerlikfrekansdf %>% kableExtra::kable()
-askerlikfrekansdf[which(is.na(askerlikfrekansdf$`Askerlik Durumu:`)),]$freq->askerNailanSayisi
+  summarise(`Frekans`=n()) ->askerlikfrekansdf
+  askerlikfrekansdf %>% rename(`Askerlik durumu`=`Askerlik Durumu:`) %>% kableExtra::kable()
+askerlikfrekansdf[which(is.na(askerlikfrekansdf$`Askerlik Durumu:`)),]$Frekans->askerNailanSayisi
 ```
 
 Veride askerlik bilgisine dair büyük bir kısımda herhangi bir bilgi girişi yapılmamıştır.`r askerNailanSayisi`  sayıda ilan hakkında bilgi yoktur. Yinede yeterli sayıda ilan askerlikle alakalı bilgi vermektedir. Bilinenin aksine ilanların büyük bir kısmında işverenlerin askerliğin makul bir tecil süresini kabul edilebilir bulduğu görülmektedir.
@@ -461,7 +458,9 @@ ggplot(data=CumulativeMinExpManagerDf, aes(x=min, y=cumulative_freq)) +
 
 ```
 
-İçerisinde **yönetici**,**müdür**,**manager** kelimelerinin geçtiği ilananlarının minimum tecrübe süresini incelendiğinde 5.yıldan itibaren ilan sayısında hatrı sayılır artış görülmüştür. 5 yıllık tecrübe yönetici pozisyonu sayısındaki ivme dikkate alındığında Türkiyedeki yönetici pozisyonları aranan bir özellik olduğu görülmüştür. \# İlan içeriklerinin analiz edilmesi
+İçerisinde **yönetici**,**müdür**,**manager** kelimelerinin geçtiği ilananlarının minimum tecrübe süresini incelendiğinde 5.yıldan itibaren ilan sayısında hatrı sayılır artış görülmüştür. 5 yıllık tecrübe yönetici pozisyonu sayısındaki ivme dikkate alındığında Türkiyedeki yönetici pozisyonları aranan bir özellik olduğu görülmüştür. 
+
+# İlan içeriklerinin analiz edilmesi
 
 Bu aşamada ilan içeriklerindeki yeteneklerin bulunması ve benzer iş ilanlarının kümelenerek bu ilanlara ait becerilerde ne tür farklılıklar/benzerlikler olduğu bulunacak ve bulgular analiz edilecektir.
 
