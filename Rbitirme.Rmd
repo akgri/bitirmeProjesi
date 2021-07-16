@@ -47,29 +47,18 @@ for(i in 1:length(cumleler)){
 }
 
 data.frame(ilan_id=unlist(ilan_id),
-           cumleler=unlist(cumleler)) %>% view()
+           cumleler=unlist(cumleler))->ilan_metinDT
 ```
-
-
 ```{r}
-cumleler[1:10]
+mainDF$ilan_id<-1:499
 
-do.call(rbind.data.frame, cumleler) %>% View()
-data.frame(cumleler)
-df %>% View()
-"fruit apple samsung huawei"->string
-string[1:10]<-string
-stringr::str_which(string,"apple")
-
-res <- str_match(test,
-                 "tanimi\\s*(.*?)\\s*tanimi")
-
-res
-
-str_which(test,"is tanimi")
+mainDF %>% select(ilan_id,pozisyon,pozisyon_kisa) %>% left_join(ilan_metinDT,by='ilan_id')->ilan_metinDF
 ```
 
 ```{r}
-mainDF$pozisyon[17]
+library("xlsx")
+write.xlsx(ilan_metinDF,'ilan_metinDF.xlsx')
 ```
+
+
 
